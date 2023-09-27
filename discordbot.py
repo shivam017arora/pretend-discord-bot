@@ -12,7 +12,7 @@ print(discord.__file__)
 from discord.ext import commands
 import requests
 
-BOT_TOKEN = "MTE1NDgxNzcwNDI1NjA4NjA3Nw.GF7MHv.M7qBUboQ8_EkpstzR8SsUmbnorFsR3yc6CAokA"
+
 from interactions import Button, ActionRow
 from moralis import evm_api
 images = ["https://github.com/OpenTalker/SadTalker/blob/main/examples/source_image/art_0.png?raw=true", "https://github.com/OpenTalker/SadTalker/blob/main/examples/source_image/art_10.png?raw=true", "https://github.com/OpenTalker/SadTalker/blob/main/examples/source_image/art_2.png?raw=true", "https://github.com/OpenTalker/SadTalker/blob/main/examples/source_image/art_9.png?raw=true"]
