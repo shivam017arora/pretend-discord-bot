@@ -15,8 +15,19 @@ import requests
 
 from interactions import Button, ActionRow
 from moralis import evm_api
-images = ["https://github.com/OpenTalker/SadTalker/blob/main/examples/source_image/art_0.png?raw=true", "https://github.com/OpenTalker/SadTalker/blob/main/examples/source_image/art_10.png?raw=true", "https://github.com/OpenTalker/SadTalker/blob/main/examples/source_image/art_2.png?raw=true", "https://github.com/OpenTalker/SadTalker/blob/main/examples/source_image/art_9.png?raw=true"]
-names = ["Sir Wigglesworth", "Captain Fluffington", "Miss Purrfect", "Lord Whiskerstein"]
+
+images = [
+    "https://github.com/OpenTalker/SadTalker/blob/main/examples/source_image/art_0.png?raw=true",
+    "https://github.com/OpenTalker/SadTalker/blob/main/examples/source_image/art_10.png?raw=true",
+    "https://github.com/OpenTalker/SadTalker/blob/main/examples/source_image/art_2.png?raw=true",
+    "https://github.com/OpenTalker/SadTalker/blob/main/examples/source_image/art_9.png?raw=true",
+]
+names = [
+    "Sir Wigglesworth",
+    "Captain Fluffington",
+    "Miss Purrfect",
+    "Lord Whiskerstein",
+]
 
 
 selected_voices = {}  # Store users' voice selections
@@ -25,6 +36,7 @@ data = {}
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True  # Necessary to interact with member data
 
 bot = commands.Bot(
     command_prefix="!", intents=intents
@@ -54,6 +66,7 @@ class VoiceSelectionView(discord.ui.View):
             button = VoiceButton(label=voice["name"], custom_id=voice["voice_id"])
             self.add_item(button)
 
+
 def download_video(video_url, save_path):
     response = requests.get(video_url, stream=True)
     response.raise_for_status()
@@ -61,7 +74,10 @@ def download_video(video_url, save_path):
         for chunk in response.iter_content(chunk_size=8192):
             video_file.write(chunk)
 
+
 from moviepy.editor import VideoFileClip
+
+
 def crop_video(video_path, output_path, crop_bottom=20):
     """
     Crop the video from the bottom by the specified amount.
@@ -69,9 +85,12 @@ def crop_video(video_path, output_path, crop_bottom=20):
     """
     with VideoFileClip(video_path) as clip:
         cropped_clip = clip.crop(y2=clip.size[1] - crop_bottom)  # crop from the bottom
-        cropped_clip.write_videofile(output_path, codec='libx264', audio_codec='aac')
+        cropped_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
+
 
 from discord import File
+
+
 async def generate_video(ctx, text, image):
     did_key = "c2hpdmFtYXR1Y3dAZ21haWwuY29t:0cWFt9EkSQ9O47aIDwfOB"
 
@@ -85,14 +104,17 @@ async def generate_video(ctx, text, image):
         "script": {
             "type": "text",
             "subtitles": "false",
-            "provider": {"type": "elevenlabs", "voice_id": selected_voices[ctx.message.author.id]},
+            "provider": {
+                "type": "elevenlabs",
+                "voice_id": selected_voices[ctx.message.author.id],
+            },
             "ssml": "false",
-            "input": text
+            "input": text,
         },
         "config": {"fluent": "false", "pad_audio": "0.0"},
         "source_url": image,
     }
-    
+
     headers = {
         "accept": "application/json",
         "content-type": "application/json",
@@ -117,7 +139,9 @@ async def generate_video(ctx, text, image):
             print(response.text, type(response.text))
             video_url = json.loads(response.text).get("result_url")
             download_video(video_url, "downloaded_video.mp4")
-            crop_video("downloaded_video.mp4", "cropped_video.mp4", crop_bottom=120)  # You'll need to 
+            crop_video(
+                "downloaded_video.mp4", "cropped_video.mp4", crop_bottom=120
+            )  # You'll need to
             await ctx.send(file=File("cropped_video.mp4"))
             break
 
@@ -126,9 +150,11 @@ async def generate_video(ctx, text, image):
 
 @bot.command(name="create", description="Test")
 async def get_voices_command_func(ctx, arg):
-
     print(ctx.message.author)
-    print(data[ctx.message.author.id].get("image"), data[ctx.message.author.id].get("name"))
+    print(
+        data[ctx.message.author.id].get("image"),
+        data[ctx.message.author.id].get("name"),
+    )
     await generate_video(ctx, arg, data[ctx.message.author.id].get("image"))
 
 
@@ -141,11 +167,16 @@ class NFTButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         # Here, you can handle what happens when the button is clicked.
         selected_nfts[interaction.user.id] = self.custom_id
-        
-        data[interaction.user.id] = {"image": images[names.index((self.custom_id)) - 1], "name": self.custom_id}
+
+        data[interaction.user.id] = {
+            "image": images[names.index((self.custom_id)) - 1],
+            "name": self.custom_id,
+        }
         print("Data: ", data)
-        
-        await interaction.response.send_message(f"{interaction.user.name} selected {self.label}")
+
+        await interaction.response.send_message(
+            f"{interaction.user.name} selected {self.label}"
+        )
 
 
 class ImageSelectionView(discord.ui.View):
@@ -153,8 +184,11 @@ class ImageSelectionView(discord.ui.View):
         super().__init__()
         # Assuming your images are a list of URLs
         for image, name in zip(images, names):
-            button = NFTButton(label=name, custom_id=name)  # You can modify the label if needed
+            button = NFTButton(
+                label=name, custom_id=name
+            )  # You can modify the label if needed
             self.add_item(button)
+
 
 def get_voices():
     import requests
@@ -167,12 +201,15 @@ def get_voices():
     print(response.text)
     return response.text
 
+
 @bot.command(name="select", description="Test")
 async def get_voices_command_func(ctx):
     voices = json.loads(get_voices()).get("voices")
     print("voices: ", voices)
 
-    voice_list = ["piTKgcLEGmPE4e6mEKli", ]
+    voice_list = [
+        "piTKgcLEGmPE4e6mEKli",
+    ]
 
     # Make sure there are at least 5 voices to choose from
     if len(voices) < 5:
@@ -185,10 +222,10 @@ async def get_voices_command_func(ctx):
 
 
 @bot.command(name="image", descrription="Test")
-async def test(ctx, arg=''):
+async def test(ctx, arg=""):
     # Create a view with the image buttons
     view = ImageSelectionView(images, names)
-    
+
     await ctx.send(content="Select an Image:", view=view)
 
 
@@ -215,6 +252,104 @@ async def test(ctx, arg):
 
     await ctx.send(embed=embed, file=discord.File(f"{arg}.mp3"))
 
+
+from discord.ext import commands
+from discord.utils import get
+
+
+@bot.command(name="remove_unverified")
+@commands.has_permissions(
+    administrator=True
+)  # Ensure only administrators can use this command
+async def remove_unverified(ctx):
+    members = []
+    async for member in ctx.guild.fetch_members(limit=2000):  # Fetch in chunks of 1000
+        members.append(member)
+
+    roles_of_members = {}
+    for member in members:
+        role_names = [
+            role.name for role in member.roles
+        ]  # Exclude the default @everyone role
+        role_names_str = ", ".join(role_names) if role_names else "None"
+        print(f"{member.name}: {role_names_str}")
+        roles_of_members[member] = role_names_str
+
+    print("*" * 50)
+    count = 0
+    for member, role in roles_of_members.items():
+        if "Verified" not in role and member.bot == False:
+            print(f"Removing {member.name}")
+            await member.kick(reason="Not verified")  # Kick the member
+            count += 1
+
+    await ctx.send(f"Total members kicked: {count}")
+
+
+import pandas as pd
+
+
+@bot.command(name="export")
+async def export_members(ctx):
+    member_data = []
+    async for member in ctx.guild.fetch_members(limit=None):
+        member_info = {
+            "Name": member.name,
+            "Discriminator": member.discriminator,
+            "ID": member.id,
+            "Creation Date": member.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        member_data.append(member_info)
+
+    df = pd.DataFrame(member_data)
+    df.to_csv("members_creation_date.csv", index=False)
+    await ctx.send("Member data exported to CSV file.")
+
+
+import pandas as pd
+
+# if file exists read it or make it and read it
+
+
+@bot.command(name="claim_reward")
+async def claim_reward(ctx):
+    try:
+        print("Id: ", ctx.message.author.id)
+        print("Claiming reward")
+        verified = False
+        for role in ctx.message.author.roles:
+            if role.name in ["Whitelist", "Early Pretender", "Verified"]:
+                verified = True
+                break
+        print("Verified: ", verified)
+        print(ctx.message.content)
+        # print author
+        print("author name", ctx.message.author.name)
+        print(ctx.message.content.split(" ")[1])
+        try:
+            df = pd.read_csv("members_reward.csv")
+        except:
+            df = pd.DataFrame(columns=["Name", "Address", "ID"])
+        if verified:
+            # add to df
+            df.loc[len(df)] = [
+                ctx.message.author.name,
+                ctx.message.content.split(" ")[1],
+                ctx.message.author.id,
+            ]
+            df.to_csv("members_reward.csv", index=False)
+            await ctx.send(
+                f"Congratulations {ctx.message.author.name}! You should receive your reward soon!"
+            )
+        else:
+            await ctx.send(
+                "You are not an early pretender! Please get the early pretender role in the discord to claim your reward!"
+            )
+    except Exception as e:
+        print(e)
+        await ctx.send("Error claiming reward")
+
+
 @bot.event
 async def on_ready():
     print(f"Ready! Logged in as {bot.user}")
@@ -226,4 +361,5 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
+BOT_TOKEN = "MTE1NDgxNzcwNDI1NjA4NjA3Nw.G8jr5F.FIn0rVuRZ4jTAsPWFcW2STGqgnKLXUX5LuXXHM"
 bot.run(BOT_TOKEN)
